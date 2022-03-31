@@ -15,6 +15,11 @@ public class Hash {
 	
 	private static BigInteger hashint; 
 	
+	/**
+	 * Using the MD5-hashing algorithm to hash a String
+	 * @param entity (String)
+	 * @return hashint (BigInteger)
+	 */
 	public static BigInteger hashOf(String entity) {		
 		// Task: Hash a given string using MD5 and return the result as a BigInteger.
 		try {
@@ -43,6 +48,10 @@ public class Hash {
 		return hashint;
 	}
 	
+	/**
+	 * 
+	 * @return Address size of MD5 hashing function
+	 */
 	public static BigInteger addressSize() {
 		
 		BigInteger md5AddressSize = null;
@@ -68,6 +77,10 @@ public class Hash {
 		return md5AddressSize;
 	}
 	
+	/**
+	 * 
+	 * @return Bit-size of the md5 Hashfunction
+	 */
 	public static int bitSize() {
 		
 		int digestlen = 0;
