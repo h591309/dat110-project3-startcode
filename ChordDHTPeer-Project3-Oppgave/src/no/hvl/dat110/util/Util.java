@@ -44,10 +44,10 @@ public class Util {
 		
 		// implement: read the descriptions above
 		if(lower.compareTo(upper) >= 0) {
-			return 
+			return lower.compareTo(id) <= 0 || id.compareTo(upper) <= 0;
+					
 		}
-		
-		return cond;
+		return (lower.compareTo(id) <= 0 && upper.compareTo(id) >= 0);
 	}
 	
 	public static List<String> toString(List<NodeInterface> list) throws RemoteException {
