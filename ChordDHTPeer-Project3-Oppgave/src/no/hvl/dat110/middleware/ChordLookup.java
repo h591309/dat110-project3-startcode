@@ -5,6 +5,7 @@ package no.hvl.dat110.middleware;
 
 import java.math.BigInteger;
 import java.rmi.RemoteException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,17 +37,15 @@ public class ChordLookup {
 		NodeInterface stub = Util.getProcessStub(succ.getNodeName(), succ.getPort());
 		
 		// check that key is a member of the set {nodeid+1,...,succID} i.e. (nodeid+1 <= key <= succID) using the ComputeLogic
-		if(Util.computeLogic(node.getNodeID().add(new BigInteger("1")), key, succ.getNodeID())) {
-			System.out.println("if");
-			return succ; // if logic returns true, then return the successor
+		if(Util.computeLogic(key, node.getNodeID().add(new BigInteger("1")), stub.getSuccessor().getNodeID())) {
+			return stub.getSuccessor(); // if logic returns true, then return the successor
 		}
-		System.out.println("ComputeLogic: " + Util.computeLogic(node.getNodeID().add(new BigInteger("1")), key, succ.getNodeID()));
 		
 		// if logic returns false; call findHighestPredecessor(key)
 		NodeInterface highestPred = findHighestPredecessor(key);
 		
 		// do return highest_pred.findSuccessor(key) - This is a recursive call until logic returns true				
-		return highestPred.findSuccessor(key);
+		return highestPred.findSuccessor(key).getSuccessor();
 	}
 	
 	/**
@@ -59,24 +58,19 @@ public class ChordLookup {
 		
 		// collect the entries in the finger table for this node
 		List<NodeInterface> table = node.getFingerTable();
-		NodeInterface finger = null;
 		// starting from the last entry, iterate over the finger table
-		for(int i = table.size(); i > 1; i--) {
-			System.out.println("FindHighestPredecessor");
-			finger = table.get(i);
-			// for each finger, obtain a stub from the registry
+		Collections.reverse(table);
+		// for each finger, obtain a stub from the registry
+		for(NodeInterface finger : table) {
 			NodeInterface stub = Util.getProcessStub(finger.getNodeName(), finger.getPort());
 			// check that finger is a member of the set {nodeID+1,...,ID-1} i.e. (nodeID+1 <= finger <= key-1) using the ComputeLogic
-			if(Util.computeLogic(finger.getNodeID().add(new BigInteger("1")), finger.getNodeID(), key.subtract(new BigInteger("1")))) {
-				return finger;
+			if(Util.computeLogic(stub.getNodeID(), stub.getNodeID().add(BigInteger.ONE), key.subtract(BigInteger.ONE))) {
+				// if logic returns true, then return the finger (means finger is the closest to key)
+				return stub;
 			}
 		}
 		
-		
-		
-		// if logic returns true, then return the finger (means finger is the closest to key)
-		
-		return null;	
+		return (NodeInterface) node;
 	}
 	
 	public void copyKeysFromSuccessor(NodeInterface succ) {
