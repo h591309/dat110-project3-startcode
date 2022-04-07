@@ -83,17 +83,28 @@ public class FileManager {
     	// Task2: assign a replica as the primary for this file. Hint, see the slide (project 3) on Canvas
     	
     	// create replicas of the filename
-    	
+    	createReplicaFiles();
 		// iterate over the replicas
+    	NodeInterface peer;
+    	Random rnd = new Random();
+    	int index = rnd.nextInt(Util.numReplicas-1);
     	
-    	// for each replica, find its successor by performing findSuccessor(replica)
-    	
-    	// call the addKey on the successor and add the replica
-    	
-    	// call the saveFileContent() on the successor
-    	
-    	// increment counter
-    	
+    	for(BigInteger replica : replicafiles) {
+    		// for each replica, find its successor by performing findSuccessor(replica)
+    		peer = chordnode.findSuccessor(replica);
+    		// call the addKey on the successor and add the replica
+        	peer.addKey(replica);
+        	// call the saveFileContent() on the successor
+        	// randomly appoint the primary server to this file replicas
+        	
+        	if(counter == index) {
+        		peer.saveFileContent(filename, replica, bytesOfFile, true); 
+        	} else {
+        		peer.saveFileContent(filename, replica, bytesOfFile, false);
+        	}
+        	// increment counter
+    		counter++;
+    	}
     		
 		return counter;
     }
@@ -111,14 +122,17 @@ public class FileManager {
 		// Task: Given a filename, find all the peers that hold a copy of this file
 		
 		// generate the N replicas from the filename by calling createReplicaFiles()
-		
+		createReplicaFiles();
 		// it means, iterate over the replicas of the file
+		NodeInterface peer = chordnode;
+		for(BigInteger replica : replicafiles) {
+			// for each replica, do findSuccessor(replica) that returns successor s.
+			NodeInterface s = peer.findSuccessor(replica);
+			// get the metadata (Message) of the replica from the successor, s (i.e. active peer) of the file
+			// save the metadata in the set succinfo.
+			succinfo.add(s.getFilesMetadata().get(replica));
+		}
 		
-		// for each replica, do findSuccessor(replica) that returns successor s.
-		
-		// get the metadata (Message) of the replica from the successor, s (i.e. active peer) of the file
-		
-		// save the metadata in the set succinfo.
 		
 		this.activeNodesforFile = succinfo;
 		
@@ -133,14 +147,18 @@ public class FileManager {
 
 		// Task: Given all the active peers of a file (activeNodesforFile()), find which is holding the primary copy
 		
+		Set<Message> set = activeNodesforFile;
 		// iterate over the activeNodesforFile
-		
-		// for each active peer (saved as Message)
-		
-		// use the primaryServer boolean variable contained in the Message class to check if it is the primary or not
-		
-		// return the primary
-		
+		for(Message m : set) {
+			// for each active peer (saved as Message)
+			
+			// use the primaryServer boolean variable contained in the Message class to check if it is the primary or not
+			if(m.isPrimaryServer()) {
+				// return the primary
+				return Util.getProcessStub(m.getNodeIP(), m.getPort());
+			}
+			
+		}
 		return null; 
 	}
 	
