@@ -69,12 +69,12 @@ public class MutualExclusion {
 		if(areAllMessagesReturned(Util.numReplicas)) {
 			// if yes, acquireLock
 			acquireLock();
+			// node.broadcastUpdatetoPeers
+			node.broadcastUpdatetoPeers(updates);
+			// clear the mutexqueue
+			mutexqueue.clear();
 			System.out.println("--Aquired Lock--");
 		}
-		// node.broadcastUpdatetoPeers
-		node.broadcastUpdatetoPeers(updates);
-		// clear the mutexqueue
-		mutexqueue.clear();
 		
 		
 		// return permission
@@ -99,28 +99,32 @@ public class MutualExclusion {
 		// increment the local clock
 		clock.increment();
 		// if message is from self, acknowledge, and call onMutexAcknowledgementReceived()
-		if(message.getNodeID() == node.getNodeID()) {
+		System.out.println("Message NodeID: " + message.getNodeID());
+		System.out.println("Node NodeID: " + node.getNodeID());
+		System.out.println("Compareto: " + message.getNodeID().compareTo(node.getNodeID()));
+		if(message.getNodeID().compareTo(node.getNodeID())==0) {
 			message.setAcknowledged(true);
 			onMutexAcknowledgementReceived(message);
+		} else {
+			int caseid = -1;
+			
+			// write if statement to transition to the correct caseid
+			
+			if(!CS_BUSY && !WANTS_TO_ENTER_CS) {
+				// caseid=0: Receiver is not accessing shared resource and does not want to (send OK to sender)
+				caseid = 0;
+			} else if (CS_BUSY) {
+				// caseid=1: Receiver already has access to the resource (dont reply but queue the request)
+				caseid = 1;
+			} else if (WANTS_TO_ENTER_CS) {
+				// caseid=2: Receiver wants to access resource but is yet to - compare own message clock to received message's clock
+				caseid = 2;
+			}
+			System.out.println("CASE ID: " + caseid);
+			// check for decision
+			doDecisionAlgorithm(message, mutexqueue, caseid);
 		}
-		int caseid = -1;
 		
-		// write if statement to transition to the correct caseid
-		
-		if(!CS_BUSY && !WANTS_TO_ENTER_CS) {
-			// caseid=0: Receiver is not accessing shared resource and does not want to (send OK to sender)
-			caseid = 0;
-		} else if (CS_BUSY) {
-			// caseid=1: Receiver already has access to the resource (dont reply but queue the request)
-			caseid = 1;
-		} else if (!CS_BUSY && WANTS_TO_ENTER_CS) {
-			// caseid=2: Receiver wants to access resource but is yet to - compare own message clock to received message's clock
-			caseid = 2;
-		}
-		
-		System.out.println("CASE ID: " + caseid);
-		// check for decision
-		doDecisionAlgorithm(message, mutexqueue, caseid);
 	}
 	
 	public void doDecisionAlgorithm(Message message, List<Message> queue, int condition) throws RemoteException {
@@ -157,7 +161,7 @@ public class MutualExclusion {
 				// check the clock of the sending process
 				int senderClock = message.getClock();
 				// own clock for the multicast message
-				int localClock = clock.getClock();
+				int localClock = node.getMessage().getClock();
 				// compare clocks, the lowest wins
 				if(senderClock == localClock) {
 					// if clocks are the same, compare nodeIDs, the lowest wins
@@ -209,10 +213,6 @@ public class MutualExclusion {
 				e.printStackTrace();
 			}
 		}
-		
-		
-		
-		
 	
 	}
 	
